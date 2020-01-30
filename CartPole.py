@@ -23,11 +23,10 @@ gamma = 0.99 #Discount rate
 eps_start = 1 #Maximum exploration rate
 eps_end = 0.01 #Minimum exploration rate
 eps_decay = 0.997 #Epsilon decay rate
-target_update = 10 #Target network is updated every 10 episodes
+target_update = 1 #Target network is updated every 10 episodes
 memory_size = 100000
 lr = 0.001 #Learning rate
 num_episodes = 1000
-
 
 #Class that holds the implmentation of QDN
 class DQN(nn.Module):
@@ -36,14 +35,15 @@ class DQN(nn.Module):
 
         self.fc1 = nn.Linear(in_features=img_height*img_width*3, out_features=24) #IN : Number of pixels * number of color channel
         self.fc2 = nn.Linear(in_features=24, out_features=32)
-        #self.fc3 = nn.Linear(in_features=24, out_features=32)
+        # self.fc3 = nn.Linear(in_features=64, out_features=32)
         self.out = nn.Linear(in_features=32, out_features=2)
 
     def forward(self, t): #Required for all Pytorch deep network
+        print("xxxxxxxx", t.shape)
         t = t.flatten(start_dim=1)
         t = F.relu(self.fc1(t))
         t = F.relu(self.fc2(t))
-        #t = F.relu(self.fc3(t))
+        # t = F.relu(self.fc3(t))
         t = self.out(t)
         return t
 
@@ -137,7 +137,7 @@ class EnvManager():
         if reward > 0:
             reward = 1
         else:
-            reward = -1000
+            reward = -1
         return torch.tensor([reward], device=self.device)
 
     def just_starting(self):
@@ -216,9 +216,7 @@ def get_moving_average(period, values):
         return moving_avg.numpy()
 
 class QValues():
-    device = device = torch.device("cpu")
-
-
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     @staticmethod
     def get_current(policy_net, states, actions):
         return policy_net(states).gather(dim=1, index=actions.unsqueeze(-1)) #Predicted Q values
@@ -247,7 +245,7 @@ def extract_tensors(experiences):
     return(t1,t2,t3,t4)
 
 #Simulation setup
-device = torch.device("cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 em = EnvManager(device, environment)
 strategy = EpsilonGreedyStrategy(eps_start, eps_end, eps_decay)
 agent = Agent(strategy, em.num_actions_available(), device)
